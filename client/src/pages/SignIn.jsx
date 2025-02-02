@@ -76,7 +76,7 @@ export default function SignIn() {
           {loading ? (
             <ClipLoader size={20} color="#ffffff" /> // Spinner while loading
           ) : (
-            "Sign Up"
+            "Sign In"
           )}
         </button>
       </form>
