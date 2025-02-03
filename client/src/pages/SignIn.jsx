@@ -1,13 +1,20 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  signInStart,
+  signInSuccess,
+  signInFailure,
+} from "../redux/user/userSlice";
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(false); // Success state
+  const { loading, error } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -15,36 +22,32 @@ export default function SignIn() {
     });
   };
 
-  console.log(formData);
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      setError(null);
-      setSuccess(false);
-      const res = await fetch("api/auth/signin", {
+      dispatch(signInStart());
+      setSuccess(false); // Reset success state before submitting
+      const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
+
       const data = await res.json();
-      if (data.success === false) {
-        setError(data.message);
-        setLoading(false);
+      if (!res.ok) {
+        dispatch(signInFailure(data.message || "Sign-in failed"));
         return;
       }
-      console.log(data);
-      setLoading(false);
-      setError(null);
-      setSuccess(true);
+
+      dispatch(signInSuccess(data)); // Pass full response data
+      setSuccess(true); // Set success to true
       setTimeout(() => {
         navigate("/");
       }, 1000);
     } catch (error) {
-      setLoading(false);
-      setError(error.message);
+      dispatch(signInFailure(error.message));
     }
   };
 
@@ -61,6 +64,7 @@ export default function SignIn() {
           id="email"
           className="border p-3 rounded-lg"
           onChange={handleChange}
+          required
         />
         <input
           type="password"
@@ -68,26 +72,27 @@ export default function SignIn() {
           id="password"
           className="border p-3 rounded-lg"
           onChange={handleChange}
+          required
         />
         <button
           disabled={loading}
           className="bg-green-700 text-white p-3 rounded-lg uppercase hover:opacity-90 disabled:opacity-80"
         >
-          {loading ? (
-            <ClipLoader size={20} color="#ffffff" /> // Spinner while loading
-          ) : (
-            "Sign In"
-          )}
+          {loading ? <ClipLoader size={20} color="#ffffff" /> : "Sign In"}
         </button>
       </form>
       <div className="flex gap-2 mt-5 justify-center text-base">
-        <p className=""> Haven't  an Account ?</p>
-        <Link to={"/signup"}>
+        <p>Haven't an Account?</p>
+        <Link to="/signup">
           <span className="text-green-600 underline">Sign up</span>
         </Link>
       </div>
       {error && <p className="text-red-500 mt-5">{error}</p>}
-      {success && <p className="text-green-500 mt-5 text-xl font-bold">Successfully signed up!</p>}
+      {success && (
+        <p className="text-green-500 mt-5 text-xl font-bold">
+          Successfully signed in!
+        </p>
+      )}
     </div>
   );
 }
